@@ -82,16 +82,17 @@ The game will then be accessible at `http://localhost:3000`. The default port is
 
 
 ### Running the Server with Docker
-If you have [Docker](https://www.docker.com/) installed, after cloning the repository you can run the following commands to build the image:
+If you have [Docker](https://www.docker.com/) installed, after cloning the repository you can build and run the application directly from the `Dockerfile`:
 
+```bash
+docker build -t agar-io-clone .
+docker run --rm -p 80:80 agar-io-clone
 ```
-docker compose up -d --build
-```
 
-The container listens on internal port `80`. The included `docker-compose.yml` is prepared for reverse-proxy based platforms such as Coolify.
+The container listens on port `80`.
 
-### Deploy to Coolify with Docker Compose
-This repository is ready for deployment in Coolify using the included `docker-compose.yml`.
+### Deploy to Coolify with Dockerfile
+This repository is ready for deployment in Coolify directly from the root `Dockerfile`.
 
 #### Prerequisites
 - A server with Docker available in Coolify.
@@ -100,16 +101,17 @@ This repository is ready for deployment in Coolify using the included `docker-co
 #### Steps
 1. Push this repository to GitHub, GitLab, or another Git provider supported by Coolify.
 2. In Coolify, create a new resource from a Git repository.
-3. Choose **Docker Compose** as the deployment type.
-4. Point Coolify to this repository and use the root `docker-compose.yml`.
-5. Set the public domain for the service in Coolify.
-6. Deploy the application.
+3. Choose **Dockerfile** as the deployment type.
+4. Use the root `Dockerfile`.
+5. Set the port to `80` in Coolify.
+6. Set the public domain for the service in Coolify.
+7. Deploy the application.
 
 #### Important Notes
 - The app inside the container listens on port `80`.
-- The Compose service exposes port `80` internally for Coolify's proxy.
-- Do not add `80:80` host mapping on the Coolify server unless you explicitly want to bypass the proxy and understand the port-conflict risks.
+- Coolify should route traffic to internal port `80`.
 - WebSockets are required by the game, so make sure the domain in Coolify is routed through its standard proxy setup.
+- If you change the app port later, update both the `PORT` environment variable and the exposed port in the `Dockerfile`.
 
 #### Local check before deploy
 ```bash

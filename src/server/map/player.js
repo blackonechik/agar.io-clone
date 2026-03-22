@@ -3,13 +3,14 @@
 const util = require('../lib/util');
 const sat = require('sat');
 const gameLogic = require('../game-logic');
+const config = require('../../../config');
 
 const MIN_SPEED = 6.25;
 const SPLIT_CELL_SPEED = 20;
 const SPEED_DECREMENT = 0.5;
 const MIN_DISTANCE = 50;
 const PUSHING_AWAY_SPEED = 1.1;
-const MERGE_TIMER = 15;
+const MERGE_TIMER = config.mergeTimerSeconds ?? 15;
 
 class Cell {
     constructor(x, y, mass, speed) {
@@ -88,6 +89,7 @@ exports.Player = class {
         this.hue = Math.round(Math.random() * 360);
         this.name = null;
         this.admin = false;
+        this.isBot = false;
         this.screenWidth = null;
         this.screenHeight = null;
         this.timeToMerge = null;

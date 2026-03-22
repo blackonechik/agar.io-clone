@@ -30,13 +30,13 @@ class Canvas {
     directionDown(event) {
     	var key = event.which || event.keyCode;
         var self = this.parent; // have to do this so we are not using the cv object
-    	if (self.directional(key)) {
-    		self.directionLock = true;
-    		if (self.newDirection(key, self.directions, true)) {
-    			self.updateTarget(self.directions);
-    			self.socket.emit('0', self.target);
+    		if (self.directional(key)) {
+    			self.directionLock = true;
+    			if (self.newDirection(key, self.directions, true)) {
+    				self.updateTarget(self.directions);
+    				self.socket.emit('0', self.target);
+    			}
     		}
-    	}
     }
 
     // Function called when a key is lifted, will change direction if arrow key.

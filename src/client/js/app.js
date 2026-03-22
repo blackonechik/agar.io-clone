@@ -6,6 +6,9 @@ var global = require('./global');
 
 var playerNameInput = document.getElementById('playerNameInput');
 var socket;
+var lastTargetSentAt = 0;
+var lastTarget = { x: 0, y: 0 };
+const TARGET_SEND_INTERVAL_MS = 50;
 
 var debug = function (args) {
     if (console && console.log) {
@@ -155,6 +158,32 @@ function handleDisconnect() {
     }
 }
 
+function shouldSendTarget(target) {
+    return target.x !== lastTarget.x || target.y !== lastTarget.y;
+}
+
+function sendTargetUpdate(force) {
+    if (!socket || !global.gameStart) {
+        return;
+    }
+
+    const now = Date.now();
+    if (!force && !shouldSendTarget(window.canvas.target) && now - lastTargetSentAt < TARGET_SEND_INTERVAL_MS) {
+        return;
+    }
+
+    if (!force && now - lastTargetSentAt < TARGET_SEND_INTERVAL_MS) {
+        return;
+    }
+
+    lastTargetSentAt = now;
+    lastTarget = {
+        x: window.canvas.target.x,
+        y: window.canvas.target.y
+    };
+    socket.emit('0', window.canvas.target);
+}
+
 // socket stuff.
 function setupSocket(socket) {
     // Handle ping.
@@ -187,6 +216,8 @@ function setupSocket(socket) {
         c.focus();
         global.game.width = gameSizes.width;
         global.game.height = gameSizes.height;
+        lastTargetSentAt = 0;
+        lastTarget = { x: 0, y: 0 };
         resize();
     });
 
@@ -358,7 +389,7 @@ function gameLoop() {
         });
         render.drawCells(cellsToDraw, playerConfig, global.toggleMassState, borders, graph);
 
-        socket.emit('0', window.canvas.target); // playerSendTarget "Heartbeat".
+        sendTargetUpdate(false);
     }
 }
 

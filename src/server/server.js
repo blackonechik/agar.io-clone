@@ -23,8 +23,13 @@ const INIT_MASS_LOG = util.mathLog(config.defaultPlayerMass, config.slowBase);
 
 let leaderboard = [];
 let leaderboardChanged = false;
+let nextBotId = 1;
 
 const Vector = SAT.Vector;
+const BOT_NAMES = [
+    'Alpha', 'Bravo', 'Comet', 'Drift', 'Echo', 'Fang', 'Glitch', 'Hex',
+    'Ion', 'Jolt', 'Kite', 'Lumen', 'Mango', 'Nova', 'Orbit', 'Pulse'
+];
 
 app.use(express.static(__dirname + '/../client'));
 app.get('/healthz', (_req, res) => res.status(200).send('ok'));
@@ -47,6 +52,54 @@ io.on('connection', function (socket) {
 function generateSpawnpoint() {
     let radius = util.massToRadius(config.defaultPlayerMass);
     return getPosition(config.newPlayerInitialPosition === 'farthest', radius, map.players.data)
+}
+
+function createBot() {
+    const botId = `bot-${nextBotId++}`;
+    const bot = new mapUtils.playerUtils.Player(botId);
+    bot.isBot = true;
+    bot.init(generateSpawnpoint(), config.defaultPlayerMass);
+    bot.name = BOT_NAMES[(nextBotId - 2) % BOT_NAMES.length] + ` ${nextBotId - 1}`;
+    bot.screenWidth = config.gameWidth;
+    bot.screenHeight = config.gameHeight;
+    bot.target = {x: 0, y: 0};
+    sockets[botId] = {
+        emit: () => {},
+        disconnect: () => {}
+    };
+    map.players.pushNew(bot);
+}
+
+function ensureBots() {
+    const currentBots = map.players.data.filter((player) => player.isBot).length;
+    for (let i = currentBots; i < config.botCount; i++) {
+        createBot();
+    }
+}
+
+function updateBotTargets() {
+    for (const bot of map.players.data) {
+        if (!bot.isBot) {
+            continue;
+        }
+
+        const nearestFood = map.food.data.reduce((closest, food) => {
+            const distance = Math.hypot(food.x - bot.x, food.y - bot.y);
+            if (!closest || distance < closest.distance) {
+                return {food, distance};
+            }
+            return closest;
+        }, null);
+
+        const targetPosition = nearestFood
+            ? nearestFood.food
+            : util.randomPosition(util.massToRadius(config.defaultPlayerMass));
+
+        bot.target = {
+            x: targetPosition.x - bot.x,
+            y: targetPosition.y - bot.y
+        };
+    }
 }
 
 
@@ -213,7 +266,7 @@ const addSpectator = (socket) => {
 }
 
 const tickPlayer = (currentPlayer) => {
-    if (currentPlayer.lastHeartbeat < new Date().getTime() - config.maxHeartbeatInterval) {
+    if (!currentPlayer.isBot && currentPlayer.lastHeartbeat < new Date().getTime() - config.maxHeartbeatInterval) {
         sockets[currentPlayer.id].emit('kick', 'Last heartbeat received over ' + config.maxHeartbeatInterval + ' ago.');
         sockets[currentPlayer.id].disconnect();
     }
@@ -302,6 +355,7 @@ const calculateLeaderboard = () => {
 }
 
 const gameloop = () => {
+    ensureBots();
     if (map.players.data.length > 0) {
         calculateLeaderboard();
         map.players.shrinkCells(config.massLossRate, config.defaultPlayerMass, config.minMassLoss);
@@ -347,8 +401,13 @@ const updateSpectator = (socketID) => {
 setInterval(tickGame, 1000 / 60);
 setInterval(gameloop, 1000);
 setInterval(sendUpdates, 1000 / config.networkUpdateFactor);
+setInterval(updateBotTargets, 1000);
+ensureBots();
 
 // Don't touch, IP configurations.
 var ipaddress = process.env.OPENSHIFT_NODEJS_IP || process.env.IP || config.host;
 var serverport = process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port;
-http.listen(serverport, ipaddress, () => console.log('[DEBUG] Listening on ' + ipaddress + ':' + serverport));
+http.listen(serverport, ipaddress, () => {
+    ensureBots();
+    console.log('[DEBUG] Listening on ' + ipaddress + ':' + serverport);
+});

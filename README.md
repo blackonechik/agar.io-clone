@@ -82,11 +82,39 @@ The game will then be accessible at `http://localhost:3000`. The default port is
 
 
 ### Running the Server with Docker
-If you have [Docker](https://www.docker.com/) installed, after cloning the repository you can run the following commands to start the server and make it acessible at `http://localhost:3000`:
+If you have [Docker](https://www.docker.com/) installed, after cloning the repository you can run the following commands to build the image:
 
 ```
-docker build -t agarioclone_agar .
-docker run -it -p 3000:3000 agarioclone_agar
+docker compose up -d --build
+```
+
+The container listens on internal port `80`. The included `docker-compose.yml` is prepared for reverse-proxy based platforms such as Coolify.
+
+### Deploy to Coolify with Docker Compose
+This repository is ready for deployment in Coolify using the included `docker-compose.yml`.
+
+#### Prerequisites
+- A server with Docker available in Coolify.
+- A domain or subdomain pointed to your Coolify instance.
+
+#### Steps
+1. Push this repository to GitHub, GitLab, or another Git provider supported by Coolify.
+2. In Coolify, create a new resource from a Git repository.
+3. Choose **Docker Compose** as the deployment type.
+4. Point Coolify to this repository and use the root `docker-compose.yml`.
+5. Set the public domain for the service in Coolify.
+6. Deploy the application.
+
+#### Important Notes
+- The app inside the container listens on port `80`.
+- The Compose service exposes port `80` internally for Coolify's proxy.
+- Do not add `80:80` host mapping on the Coolify server unless you explicitly want to bypass the proxy and understand the port-conflict risks.
+- WebSockets are required by the game, so make sure the domain in Coolify is routed through its standard proxy setup.
+
+#### Local check before deploy
+```bash
+docker build -t agar-io-clone .
+docker run --rm -p 80:80 agar-io-clone
 ```
 
 ---

@@ -1,6 +1,11 @@
-version: "2"
 services:
-    agar:
-        build: .
-        ports:
-            - "3010:3000"
+  agar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 80
+      IP: 0.0.0.0
+    expose:
+      - "80"
+    restart: unless-stopped
